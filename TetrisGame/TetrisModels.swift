@@ -121,18 +121,44 @@ struct GameBoard {
     var currentTetromino: Tetromino?
     var nextTetromino: Tetromino?
     var score: Int = 0
+    // 七種一巡のためのテトリミノバッグ
+    var tetrominoBag: [TetrominoType] = []
     
     init(rows: Int = 20, cols: Int = 10) {
         self.rows = rows
         self.cols = cols
         self.grid = Array(repeating: Array(repeating: nil, count: cols), count: rows)
+        // 初期化時にテトリミノバッグを準備
+        fillTetrominoBag()
         prepareTetrominoes()
     }
-    
+    // テトリミノバッグを満たす（七種一巡の実装）
+    mutating private func fillTetrominoBag() {
+        // バッグが空の場合のみ新しいセットを作成
+        if tetrominoBag.isEmpty {
+            // 全種類のテトリミノを用意
+            tetrominoBag = TetrominoType.allCases
+            // シャッフルして順番をランダムに
+            tetrominoBag.shuffle()
+        }
+    }
+        
+    // 次のテトリミノを取得
+    mutating private func getNextTetrominoType() -> TetrominoType {
+        // バッグが空ならリフィル
+        if tetrominoBag.isEmpty {
+            fillTetrominoBag()
+        }
+            
+        // バッグから一つ取り出す
+        return tetrominoBag.removeFirst()
+    }
     // テトリミノを準備する
     mutating private func prepareTetrominoes() {
         if nextTetromino == nil {
-            nextTetromino = Tetromino.create(type: TetrominoType.allCases.randomElement()!)
+            // 七種一巡方式で次のテトリミノを選択
+            let nextType = getNextTetrominoType()
+            nextTetromino = Tetromino.create(type: nextType)
         }
     }
     
@@ -140,7 +166,10 @@ struct GameBoard {
     mutating func spawnNewTetromino() -> Bool {
         prepareTetrominoes()
         currentTetromino = nextTetromino
-        nextTetromino = Tetromino.create(type: TetrominoType.allCases.randomElement()!)
+        
+        // 次のテトリミノを七種一巡方式で選択
+        let nextType = getNextTetrominoType()
+        nextTetromino = Tetromino.create(type: nextType)
         
         // ゲームオーバー判定 - 実際に衝突する場合のみゲームオーバーにする
         if let tetromino = currentTetromino {
