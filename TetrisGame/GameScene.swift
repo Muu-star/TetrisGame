@@ -5,7 +5,7 @@ class GameScene: SKScene {
     
     // ゲーム関連のプロパティ
     private var gameBoard: GameBoard!
-    private var blockSize: CGFloat = 16.0  // ブロックサイズをさらに小さくして画面に収まるようにする
+    private var blockSize: CGFloat = 14.0  // ブロックサイズをさらに小さくして画面に収まるようにする
     private var boardNode: SKNode!
     private var dropInterval: TimeInterval = 1.0  // 自動下降の間隔（秒）
     private var lastDropTime: TimeInterval = 0
@@ -84,24 +84,27 @@ class GameScene: SKScene {
     }
     
     private func setupNextTetrominoLabel() {
+        // グリッドの右端座標を計算
+        let gridRightEdge = boardOffset.x + CGFloat(gameBoard.cols) * blockSize
+        
         let nextLabel = SKLabelNode(text: "Next")
         nextLabel.fontName = "Arial-Bold"
         nextLabel.fontSize = 18
-        nextLabel.position = CGPoint(x: size.width - 70, y: size.height - 60)
-        addChild(nextLabel)
+        nextLabel.position = CGPoint(x: gridRightEdge + 60, y: size.height - 60)
+            addChild(nextLabel)
         
         // 次のテトリミノ表示用ノード
-        nextTetrominoNode = SKNode()
-        nextTetrominoNode?.position = CGPoint(x: size.width - 70, y: size.height - 100)
-        addChild(nextTetrominoNode!)
-    }
+            nextTetrominoNode = SKNode()
+            nextTetrominoNode?.position = CGPoint(x: gridRightEdge + 60, y: size.height - 100)
+            addChild(nextTetrominoNode!)
+        }
     
     private func setupControlButtons() {
         // 十字キーの中心位置
         let centerX: CGFloat = 100
         let centerY: CGFloat = size.height/2
         let buttonRadius: CGFloat = 30
-        let buttonSpacing: CGFloat = 65  // ボタン間の距離
+        let buttonSpacing: CGFloat = 80  // ボタン間の距離
         
         // 左ボタン
         leftButton = createDirectionButton(
@@ -372,6 +375,11 @@ class GameScene: SKScene {
         
         let previewBlockSize = blockSize * 0.8  // 少し小さめに表示
         
+        // 中央揃えのためのオフセット計算
+        let maxWidth = 4 * previewBlockSize // 最大幅（I型テトリミノの幅）
+        let tetrominoWidth = CGFloat(nextTetromino.blocks[0].count) * previewBlockSize
+        let offsetX = (maxWidth - tetrominoWidth) / 2
+        
         // 次のテトリミノを描画
         for i in 0..<nextTetromino.blocks.count {
             for j in 0..<nextTetromino.blocks[i].count {
@@ -400,8 +408,62 @@ class GameScene: SKScene {
                 }
             }
         }
+        // 次の4つのテトリミノをシミュレートして表示
+        // 実際のゲームロジックには実装されていないため、ダミーデータを表示
+        displayDummyNextTetrominoes()
+        
     }
-    
+    private func displayDummyNextTetrominoes() {
+        // サンプルとして4つの追加テトリミノを表示
+        let tetrominoTypes: [TetrominoType] = [.L, .I, .T, .Z] // サンプルのタイプ（ランダムな順序）
+        
+        for i in 0..<4 {
+            let yOffset = -CGFloat(i + 1) * (blockSize * 4) // 各テトリミノの間隔
+            
+            let dummyNode = SKNode()
+            dummyNode.position = CGPoint(x: 0, y: yOffset)
+            
+            // サンプルテトリミノの作成
+            let dummyTetromino = Tetromino.create(type: tetrominoTypes[i])
+            let previewBlockSize = blockSize * 0.8
+            
+            // 中央揃えのためのオフセット計算
+            let maxWidth = 4 * previewBlockSize
+            let tetrominoWidth = CGFloat(dummyTetromino.blocks[0].count) * previewBlockSize
+            let offsetX = (maxWidth - tetrominoWidth) / 2
+            
+            // テトリミノを描画
+            for row in 0..<dummyTetromino.blocks.count {
+                for col in 0..<dummyTetromino.blocks[row].count {
+                    if dummyTetromino.blocks[row][col] {
+                        let block = SKShapeNode(rectOf: CGSize(width: previewBlockSize, height: previewBlockSize))
+                        block.position = CGPoint(
+                            x: offsetX + CGFloat(col) * previewBlockSize,
+                            y: -CGFloat(row) * previewBlockSize
+                        )
+                        
+                        // 色の設定
+                        let blockColor: UIColor
+                        switch dummyTetromino.type {
+                        case .I: blockColor = .cyan
+                        case .O: blockColor = .yellow
+                        case .T: blockColor = .purple
+                        case .S: blockColor = .green
+                        case .Z: blockColor = .red
+                        case .J: blockColor = .blue
+                        case .L: blockColor = .orange
+                        }
+                        
+                        block.fillColor = blockColor
+                        block.strokeColor = .white
+                        dummyNode.addChild(block)
+                    }
+                }
+            }
+            
+            nextTetrominoNode?.addChild(dummyNode)
+        }
+    }
     // 固定されたブロックを描画する関数
     private func drawFixedBlocks() {
         // 既存の固定ブロックノードを削除
