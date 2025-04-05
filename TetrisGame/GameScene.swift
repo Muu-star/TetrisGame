@@ -408,6 +408,7 @@ class GameScene: SKScene {
                 }
             }
         }
+<<<<<<< HEAD
         // 次の4つまでのテトリミノを表示
             displayNextTetrominoes()
     }
@@ -472,6 +473,26 @@ class GameScene: SKScene {
             
             // バッグの中のテトリミノを表示
             let dummyTetromino = Tetromino.create(type: upcomingPieces[i])
+=======
+        // 次の4つのテトリミノをシミュレートして表示
+        // 実際のゲームロジックには実装されていないため、ダミーデータを表示
+        displayDummyNextTetrominoes()
+        
+    }
+    private func displayDummyNextTetrominoes() {
+        // サンプルとして4つの追加テトリミノを表示
+        let tetrominoTypes: [TetrominoType] = [.L, .I, .T, .Z] // サンプルのタイプ（ランダムな順序）
+        
+        for i in 0..<4 {
+            let yOffset = -CGFloat(i + 1) * (blockSize * 4) // 各テトリミノの間隔
+            
+            let dummyNode = SKNode()
+            dummyNode.position = CGPoint(x: 0, y: yOffset)
+            
+            // サンプルテトリミノの作成
+            let dummyTetromino = Tetromino.create(type: tetrominoTypes[i])
+            let previewBlockSize = blockSize * 0.8
+>>>>>>> 916ff9b22dc415264a9003e9c47ef9d1aa7c8190
             
             // 中央揃えのためのオフセット計算
             let maxWidth = 4 * previewBlockSize
@@ -502,12 +523,20 @@ class GameScene: SKScene {
                         
                         block.fillColor = blockColor
                         block.strokeColor = .white
+<<<<<<< HEAD
                         pieceNode.addChild(block)
+=======
+                        dummyNode.addChild(block)
+>>>>>>> 916ff9b22dc415264a9003e9c47ef9d1aa7c8190
                     }
                 }
             }
             
+<<<<<<< HEAD
             nextTetrominoNode?.addChild(pieceNode)
+=======
+            nextTetrominoNode?.addChild(dummyNode)
+>>>>>>> 916ff9b22dc415264a9003e9c47ef9d1aa7c8190
         }
     }
     // 固定されたブロックを描画する関数
