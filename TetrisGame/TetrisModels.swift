@@ -132,211 +132,296 @@ struct GameBoard {
         fillTetrominoBag()
         prepareTetrominoes()
     }
+    
     // テトリミノバッグを満たす（七種一巡の実装）
     mutating private func fillTetrominoBag() {
         // バッグが空の場合のみ新しいセットを作成
         if tetrominoBag.isEmpty {
             // 全種類のテトリミノを用意
             tetrominoBag = TetrominoType.allCases
-            // シャッフルして順番をランダムに
+            // バッグをシャッフル
             tetrominoBag.shuffle()
         }
     }
+    
+    // 現在のテトリミノと次のテトリミノを準備する
+    mutating private func prepareTetrominoes() {
+        // 現在のテトリミノが存在しない場合、新しいテトリミノを設定
+        if currentTetromino == nil {
+            // バッグからテトリミノの種類を取り出し
+            let type = tetrominoBag.removeFirst()
+            // 新しいテトリミノを作成
+            currentTetromino = Tetromino.create(type: type)
+            
+            // バッグが空になったら再び満たす
+            if tetrominoBag.isEmpty {
+                fillTetrominoBag()
+            }
+        }
         
-    // 次のテトリミノを取得
-    mutating private func getNextTetrominoType() -> TetrominoType {
-        // バッグが空ならリフィル
+        // 次のテトリミノが存在しない場合、新しいテトリミノを設定
+        if nextTetromino == nil {
+            // バッグからテトリミノの種類を取り出し
+            let type = tetrominoBag.removeFirst()
+            // 新しいテトリミノを作成
+            nextTetromino = Tetromino.create(type: type)
+            
+            // バッグが空になったら再び満たす
+            if tetrominoBag.isEmpty {
+                fillTetrominoBag()
+            }
+        }
+    }
+    
+    // 新しいテトリミノを生成する
+    mutating func spawnNewTetromino() -> Bool {
+        // 次のテトリミノを現在のテトリミノに設定
+        currentTetromino = nextTetromino
+        
+        // バッグから新しいテトリミノの種類を取り出し
+        let type = tetrominoBag.removeFirst()
+        // 新しいテトリミノを作成
+        nextTetromino = Tetromino.create(type: type)
+        
+        // バッグが空になったら再び満たす
         if tetrominoBag.isEmpty {
             fillTetrominoBag()
         }
-            
-        // バッグから一つ取り出す
-        return tetrominoBag.removeFirst()
-    }
-    // テトリミノを準備する
-    mutating private func prepareTetrominoes() {
-        if nextTetromino == nil {
-            // 七種一巡方式で次のテトリミノを選択
-            let nextType = getNextTetrominoType()
-            nextTetromino = Tetromino.create(type: nextType)
-        }
+        
+        // テトリミノの生成が成功したかどうかを返す
+        return currentTetromino != nil
     }
     
-    // 新しいテトリミノを生成
-    mutating func spawnNewTetromino() -> Bool {
-        prepareTetrominoes()
-        currentTetromino = nextTetromino
-        
-        // 次のテトリミノを七種一巡方式で選択
-        let nextType = getNextTetrominoType()
-        nextTetromino = Tetromino.create(type: nextType)
-        
-        // ゲームオーバー判定 - 実際に衝突する場合のみゲームオーバーにする
-        if let tetromino = currentTetromino {
-            if !isValidPosition(tetromino) {
-                // 表示可能領域内で衝突がある場合のみゲームオーバー
-                for i in 0..<tetromino.blocks.count {
-                    for j in 0..<tetromino.blocks[i].count {
-                        if tetromino.blocks[i][j] {
-                            let row = tetromino.position.row + i
-                            if row >= 0 && row < rows { // 画面内のブロックのみチェック
-                                let col = tetromino.position.col + j
-                                if col >= 0 && col < cols && grid[row][col] != nil {
-                                    return false // 有効な画面内でブロックが衝突 -> ゲームオーバー
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        return true
-    }
-    
-    // テトリミノを下に移動
-    mutating func moveTetrominoDown() -> Bool {
-        guard var tetromino = currentTetromino else { return false }
-        tetromino.position.row += 1
-        
-        if isValidPosition(tetromino) {
-            currentTetromino = tetromino
-            return true
-        }
-        
-        // 移動できない場合は固定
-        lockTetromino()
-        return false
-    }
-    
-    // テトリミノを左に移動
+    // 現在のテトリミノを左に移動させる
     mutating func moveTetrominoLeft() -> Bool {
         guard var tetromino = currentTetromino else { return false }
-        tetromino.position.col -= 1
         
-        if isValidPosition(tetromino) {
-            currentTetromino = tetromino
-            return true
-        }
-        return false
-    }
-    
-    // テトリミノを右に移動
-    mutating func moveTetrominoRight() -> Bool {
-        guard var tetromino = currentTetromino else { return false }
-        tetromino.position.col += 1
+        // 左に移動した位置を計算
+        let newCol = tetromino.position.col - 1
         
-        if isValidPosition(tetromino) {
-            currentTetromino = tetromino
-            return true
-        }
-        return false
-    }
-    
-    // テトリミノを時計回りに回転
-    mutating func rotateTetromino() -> Bool {
-        guard var tetromino = currentTetromino else { return false }
-        tetromino.rotate()
-        
-        if isValidPosition(tetromino) {
-            currentTetromino = tetromino
-            return true
-        }
-        return false
-    }
-    
-    // テトリミノを反時計回りに回転
-    mutating func rotateTetrominoCounterClockwise() -> Bool {
-        guard var tetromino = currentTetromino else { return false }
-        tetromino.rotateCounterClockwise()
-        
-        if isValidPosition(tetromino) {
-            currentTetromino = tetromino
-            return true
-        }
-        return false
-    }
-    
-    // ハードドロップ機能
-    mutating func hardDrop() {
-        guard var tetromino = currentTetromino else { return }
-        
-        // 衝突するまで下に移動
-        while true {
-            tetromino.position.row += 1
-            if !isValidPosition(tetromino) {
-                tetromino.position.row -= 1
-                break
-            }
+        // 移動先がボードの範囲内かチェック
+        if newCol < 0 {
+            return false
         }
         
-        currentTetromino = tetromino
-        lockTetromino()
-    }
-    
-    // テトリミノの位置が有効かチェック（ゲームエリア外の場合にも対応）
-    private func isValidPosition(_ tetromino: Tetromino) -> Bool {
+        // 移動先に他のブロックがないかチェック
         for i in 0..<tetromino.blocks.count {
             for j in 0..<tetromino.blocks[i].count {
                 if tetromino.blocks[i][j] {
-                    let row = tetromino.position.row + i
-                    let col = tetromino.position.col + j
+                    let boardRow = tetromino.position.row + i
+                    let boardCol = newCol + j
                     
-                    // 左右と下の範囲チェック（上は画面外からの登場を許可）
-                    if col < 0 || col >= cols || row >= rows {
-                        return false
-                    }
-                    
-                    // 画面内にある場合のみブロックとの衝突チェック
-                    if row >= 0 && grid[row][col] != nil {
+                    // ボードの範囲外または既にブロックがある場合は移動できない
+                    if boardRow >= 0 && (boardCol < 0 || boardCol >= cols || grid[boardRow][boardCol] != nil) {
                         return false
                     }
                 }
             }
         }
+        
+        // テトリミノを左に移動
+        tetromino.position.col = newCol
+        currentTetromino = tetromino
+        return true
+    }
+    
+    // 現在のテトリミノを右に移動させる
+    mutating func moveTetrominoRight() -> Bool {
+        guard var tetromino = currentTetromino else { return false }
+        
+        // 右に移動した位置を計算
+        let newCol = tetromino.position.col + 1
+        
+        // 移動先に他のブロックがないかチェック
+        for i in 0..<tetromino.blocks.count {
+            for j in 0..<tetromino.blocks[i].count {
+                if tetromino.blocks[i][j] {
+                    let boardRow = tetromino.position.row + i
+                    let boardCol = newCol + j
+                    
+                    // ボードの範囲外または既にブロックがある場合は移動できない
+                    if boardRow >= 0 && (boardCol < 0 || boardCol >= cols || grid[boardRow][boardCol] != nil) {
+                        return false
+                    }
+                }
+            }
+        }
+        
+        // テトリミノを右に移動
+        tetromino.position.col = newCol
+        currentTetromino = tetromino
+        return true
+    }
+    
+    // 現在のテトリミノを下に移動させる
+    mutating func moveTetrominoDown() -> Bool {
+        guard var tetromino = currentTetromino else { return false }
+        
+        // 下に移動した位置を計算
+        let newRow = tetromino.position.row + 1
+        
+        // 移動先に他のブロックがないかチェック
+        for i in 0..<tetromino.blocks.count {
+            for j in 0..<tetromino.blocks[i].count {
+                if tetromino.blocks[i][j] {
+                    let boardRow = newRow + i
+                    let boardCol = tetromino.position.col + j
+                    
+                    // ボードの範囲外または既にブロックがある場合は移動できない
+                    if boardRow >= rows || (boardCol >= 0 && boardCol < cols && grid[boardRow][boardCol] != nil) {
+                        // テトリミノを固定
+                        fixTetromino()
+                        return false
+                    }
+                }
+            }
+        }
+        
+        // テトリミノを下に移動
+        tetromino.position.row = newRow
+        currentTetromino = tetromino
         return true
     }
     
     // テトリミノを固定する
-    mutating private func lockTetromino() {
+    mutating private func fixTetromino() {
         guard let tetromino = currentTetromino else { return }
         
         // テトリミノのブロックをグリッドに固定
         for i in 0..<tetromino.blocks.count {
             for j in 0..<tetromino.blocks[i].count {
                 if tetromino.blocks[i][j] {
-                    let row = tetromino.position.row + i
-                    let col = tetromino.position.col + j
-                    if row >= 0 && row < rows && col >= 0 && col < cols {
-                        grid[row][col] = tetromino.type
+                    let boardRow = tetromino.position.row + i
+                    let boardCol = tetromino.position.col + j
+                    
+                    if boardRow >= 0 && boardRow < rows && boardCol >= 0 && boardCol < cols {
+                        grid[boardRow][boardCol] = tetromino.type
                     }
                 }
             }
         }
         
-        // ラインの消去とスコアの更新
-        clearLines()
-        
-        // 現在のテトリミノをクリア（新しいテトリミノは別のメソッドで生成）
+        // 現在のテトリミノをクリア
         currentTetromino = nil
+        
+        // 行の消去をチェック
+        checkLineClears()
+        
+        // 新しいテトリミノを生成
+        spawnNewTetromino()
     }
     
-    // ラインを消去する
-    mutating private func clearLines() {
+    // 行の消去をチェックする
+    mutating private func checkLineClears() {
         var linesCleared = 0
         
-        for i in (0..<rows).reversed() {
-            if grid[i].allSatisfy({ $0 != nil }) {
-                // ラインを消去
-                grid.remove(at: i)
+        // 下から上に向かってチェック
+        for row in (0..<rows).reversed() {
+            // 行が完全に埋まっているかチェック
+            if grid[row].allSatisfy({ $0 != nil }) {
+                // 行を消去
+                grid.remove(at: row)
+                // 新しい空の行を追加
                 grid.insert(Array(repeating: nil, count: cols), at: 0)
                 linesCleared += 1
             }
         }
         
-        // スコアの更新
+        // スコアを更新
         if linesCleared > 0 {
-            score += [0, 100, 300, 500, 800][linesCleared]
+            score += linesCleared * 100
         }
     }
-} // GameBoard構造体の終わり
+    
+    // テトリミノを一気に下まで落とす
+    mutating func hardDrop() {
+        // テトリミノが固定されるまで下に移動
+        while moveTetrominoDown() {
+            // 移動可能な間は何もしない
+        }
+    }
+    
+    // 現在のテトリミノを回転させる
+    mutating func rotateTetromino() -> Bool {
+        guard var tetromino = currentTetromino else { return false }
+        
+        // 回転前のブロックを保存
+        let originalBlocks = tetromino.blocks
+        
+        // テトリミノを回転
+        tetromino.rotate()
+        
+        // 回転後の位置が有効かチェック
+        for i in 0..<tetromino.blocks.count {
+            for j in 0..<tetromino.blocks[i].count {
+                if tetromino.blocks[i][j] {
+                    let boardRow = tetromino.position.row + i
+                    let boardCol = tetromino.position.col + j
+                    
+                    // ボードの範囲外または既にブロックがある場合は回転できない
+                    if boardRow >= rows || boardCol < 0 || boardCol >= cols || (boardRow >= 0 && grid[boardRow][boardCol] != nil) {
+                        // 回転を元に戻す
+                        tetromino.blocks = originalBlocks
+                        return false
+                    }
+                }
+            }
+        }
+        
+        // 回転を適用
+        currentTetromino = tetromino
+        return true
+    }
+    
+    // 現在のテトリミノを反時計回りに回転させる
+    mutating func rotateTetrominoCounterClockwise() -> Bool {
+        guard var tetromino = currentTetromino else { return false }
+        
+        // 回転前のブロックを保存
+        let originalBlocks = tetromino.blocks
+        
+        // テトリミノを反時計回りに回転
+        tetromino.rotateCounterClockwise()
+        
+        // 回転後の位置が有効かチェック
+        for i in 0..<tetromino.blocks.count {
+            for j in 0..<tetromino.blocks[i].count {
+                if tetromino.blocks[i][j] {
+                    let boardRow = tetromino.position.row + i
+                    let boardCol = tetromino.position.col + j
+                    
+                    // ボードの範囲外または既にブロックがある場合は回転できない
+                    if boardRow >= rows || boardCol < 0 || boardCol >= cols || (boardRow >= 0 && grid[boardRow][boardCol] != nil) {
+                        // 回転を元に戻す
+                        tetromino.blocks = originalBlocks
+                        return false
+                    }
+                }
+            }
+        }
+        
+        // 回転を適用
+        currentTetromino = tetromino
+        return true
+    }
+    
+    // ゲームオーバーかどうかを判定する
+    func isGameOver() -> Bool {
+        // 現在のテトリミノが存在しない場合はゲームオーバーではない
+        guard let tetromino = currentTetromino else { return false }
+        
+        // テトリミノの位置が画面上部を超えている場合はゲームオーバー
+        for i in 0..<tetromino.blocks.count {
+            for j in 0..<tetromino.blocks[i].count {
+                if tetromino.blocks[i][j] {
+                    let boardRow = tetromino.position.row + i
+                    if boardRow < 0 {
+                        return true
+                    }
+                }
+            }
+        }
+        
+        return false
+    }
+}
